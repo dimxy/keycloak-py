@@ -42,7 +42,7 @@ class KeycloakOAuth2:
         self,
         *,
         client_id: str,
-        get_session,
+        get_session, # should return Generator
         get_user_id,
         create_user,
         client_secret: str | bytes | None,
@@ -159,7 +159,7 @@ class KeycloakOAuth2:
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid auth server token (no email)"
             )
-        if (session := self._get_session()) is None:
+        if (gen := self._get_session()) is None or (session := next(gen)) is None:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Cannot access db"
