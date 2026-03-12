@@ -29,7 +29,7 @@ class UserKC(BaseModel):
     """Complete access token. Required for token propagation."""
     token: str
     is_superuser: bool = False
-    id: uuid.UUID | None = None
+    id: uuid.UUID
 
 # Keycloak public user
 class UserPublicKC(BaseModel):
@@ -166,7 +166,13 @@ class KeycloakOAuth2:
             )
 
         user_id = self._get_user_id(session=session, email=email)
-        # id = db_user.id if db_user is not None else get_new_id()
+        if user_id is None:
+            user_id = self._create_user(session=session, email=email, is_active=True, is_superuser=False)
+        if user_id is None:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Could not create db user"
+            )
         user = UserKC(
             name=claims["preferred_username"],
             email=email,
@@ -174,13 +180,6 @@ class KeycloakOAuth2:
             token=token["access_token"],
             id=user_id
         )
-        if user.id is None:
-            user.id = self._create_user(session=session, email=email, is_active=True, is_superuser=False)
-        if user.id is None:
-            raise HTTPException(
-                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Could not create db user"
-            )
 
         request.session["user"] = user.model_dump(mode="json")
         # Where to redirect after successful login, normally should be set in '../auth/login?redirect_uri=...'
