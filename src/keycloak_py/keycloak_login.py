@@ -214,7 +214,9 @@ class KeycloakOAuth2:
 
 
 def get_current_user(request: Request) -> UserKC:
+    print('get_current_user entered')
     if (user := request.session.get("user")) is not None:
+        print('get_current_user user=', user)
         return UserKC.model_validate(user)
     else:
         raise HTTPException(
