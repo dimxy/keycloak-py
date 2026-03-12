@@ -141,7 +141,7 @@ class KeycloakOAuth2:
         if next := request.query_params.get("next"):
             redirect_uri = redirect_uri.include_query_params(next=next)
         try:
-            return await self.keycloak.authorize_redirect(
+            resp = await self.keycloak.authorize_redirect(
                 request, redirect_uri, code_verifier=self.code_verifier
             )
         except Exception as e:
@@ -150,6 +150,7 @@ class KeycloakOAuth2:
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Auth server not available"
             )
+        return resp
 
     # Callback where we are sent by oauth provider
     async def oauth_callback(self, request: Request) -> RedirectResponse:
