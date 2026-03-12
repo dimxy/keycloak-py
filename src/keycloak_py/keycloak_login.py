@@ -21,6 +21,7 @@ from starlette.responses import RedirectResponse
 logger = logging.getLogger(__name__)
 
 # Keycloak user
+# TODO: maybe we should not send some sensitive data in cookie (email?)
 class UserKC(BaseModel):
     name: str
     hashed_password: str = '' # not used
@@ -32,6 +33,7 @@ class UserKC(BaseModel):
     id: uuid.UUID
 
 # Keycloak public user
+# TODO: not not used, assumed to be returned in API
 class UserPublicKC(BaseModel):
     name: str
     email: EmailStr | None
@@ -133,13 +135,21 @@ class KeycloakOAuth2:
         redirect_uri = (
             URL(redirect_target)
             if redirect_target
-            else request.url_for("oauth_callback")  # /auth/callback
+            else request.url_for("oauth_callback")  # /auth/callback TODO: check
         )
+        print('login_page redirect_uri=', redirect_uri, 'redirect_target=', redirect_target)
         if next := request.query_params.get("next"):
             redirect_uri = redirect_uri.include_query_params(next=next)
-        return await self.keycloak.authorize_redirect(
-            request, redirect_uri, code_verifier=self.code_verifier
-        )
+        try:
+            return await self.keycloak.authorize_redirect(
+                request, redirect_uri, code_verifier=self.code_verifier
+            )
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Auth server not available"
+            )
 
     # Callback where we are sent by oauth provider
     async def oauth_callback(self, request: Request) -> RedirectResponse:
@@ -214,7 +224,6 @@ class KeycloakOAuth2:
 
 
 def get_current_user(request: Request) -> UserKC:
-    print('get_current_user entered')
     if (user := request.session.get("user")) is not None:
         print('get_current_user user=', user)
         return UserKC.model_validate(user)
