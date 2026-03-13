@@ -115,7 +115,7 @@ class KeycloakOAuth2:
 
         self.router = fastapi.APIRouter(prefix="/auth", tags=["auth"])
         self.router.add_api_route("/login", self.login_page, methods=["GET","POST"])
-        self.router.add_api_route("/callback", self.oauth_callback)
+        self.router.add_api_route("/callback", self.oauth_callback) # defaults to name="oauth_callback"
         self.router.add_api_route("/logout", self.logout)
         self.router.add_api_route("/certs", self.public_keys)
 
@@ -135,7 +135,7 @@ class KeycloakOAuth2:
         redirect_uri = (
             URL(redirect_target)
             if redirect_target
-            else request.url_for("oauth_callback")  # /auth/callback TODO: check
+            else request.url_for("oauth_callback")  # /auth/callback
         )
         if next := request.query_params.get("next"):
             redirect_uri = redirect_uri.include_query_params(next=next)
@@ -153,8 +153,15 @@ class KeycloakOAuth2:
     # Callback where we are sent by oauth provider
     async def oauth_callback(self, request: Request) -> RedirectResponse:
         """Authorize user with Keycloak access token."""
-        token = await self.keycloak.authorize_access_token(request)
-        claims = await self.parse_claims(token)
+        try:
+            token = await self.keycloak.authorize_access_token(request)
+            claims = await self.parse_claims(token)
+        except Exception as e:
+            logger.error(e)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Auth server not available"
+            )
         roles :list[str] = []
         roles.extend(claims.get("realm_access", {}).get("roles", []))
         roles.extend(
@@ -224,7 +231,6 @@ class KeycloakOAuth2:
 
 def get_current_user(request: Request) -> UserKC:
     if (user := request.session.get("user")) is not None:
-        print('get_current_user user=', user)
         return UserKC.model_validate(user)
     else:
         raise HTTPException(
