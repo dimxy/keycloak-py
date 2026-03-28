@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 class UserKC(BaseModel):
     name: str
     hashed_password: str = '' # not used
-    email: EmailStr | None
+    email: EmailStr
     roles: list[str]
     """Complete access token. Required for token propagation."""
     token: str
@@ -36,7 +36,7 @@ class UserKC(BaseModel):
 # TODO: not not used, assumed to be returned in API
 class UserPublicKC(BaseModel):
     name: str
-    email: EmailStr | None
+    email: EmailStr
     created_at: datetime | None = None
     is_superuser: bool = False
 
