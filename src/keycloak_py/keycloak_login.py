@@ -115,7 +115,7 @@ class KeycloakOAuth2:
         import fastapi
 
         self.router = fastapi.APIRouter(prefix="/auth", tags=["auth"])
-        self.router.add_api_route("/login", self.login_page, methods=["GET","POST"])
+        self.router.add_api_route("/login", self.login_page, methods=["GET"])
         self.router.add_api_route("/callback", self.oauth_callback) # defaults to name="oauth_callback"
         self.router.add_api_route("/logout", self.logout)
         self.router.add_api_route("/certs", self.public_keys)
