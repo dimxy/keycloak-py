@@ -38,6 +38,7 @@ class UserPublicKC(BaseModel):
     name: str
     email: EmailStr | None
     created_at: datetime | None = None
+    is_superuser: bool = False
 
 class KeycloakOAuth2:
     def __init__(
