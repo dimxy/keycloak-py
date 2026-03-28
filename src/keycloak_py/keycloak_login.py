@@ -33,12 +33,13 @@ class UserKC(BaseModel):
     id: uuid.UUID
 
 # Keycloak public user
-# TODO: not not used, assumed to be returned in API
+# TODO: check for sensitive data to be returned
 class UserPublicKC(BaseModel):
     name: str
     email: EmailStr
     created_at: datetime | None = None
     is_superuser: bool = False
+    id: uuid.UUID
 
 class KeycloakOAuth2:
     def __init__(
